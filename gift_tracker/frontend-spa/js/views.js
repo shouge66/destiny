@@ -464,48 +464,191 @@ function rankingHtml(ranking) {
     .join("");
 }
 
+const LIFE_DIMENSION_LIBRARY = {
+  health: {
+    name: "身心健康",
+    objective: "建立稳定作息与基础体能，保证连续 90 天可持续输出。",
+    baseline: "每晚保证 7 小时睡眠，每周至少 3 次 30 分钟低门槛运动。",
+    progress: "每周 1 次力量训练 + 1 次有氧，晚间 23:30 前停止高刺激输入。",
+    challenge: "连续 4 周完成固定训练节奏，并记录心率/睡眠趋势。",
+    metric: "周睡眠达标天数 >= 5，周运动次数 >= 3。",
+    warning: "连续 2 天熬夜、情绪易怒、白天注意力明显下滑。",
+    correction: "启动 48 小时恢复：晚间减负 + 20 分钟快走 + 当天提前入睡。",
+    fallback: "当日最低动作：10 分钟拉伸 + 提前 30 分钟睡觉。",
+  },
+  emotional: {
+    name: "情绪与心理",
+    objective: "从情绪反应转向情绪识别，提升稳定度与自我接纳。",
+    baseline: "每天用 3 句话记录当日情绪触发点和身体感受。",
+    progress: "每周完成 2 次 15 分钟情绪复盘（事实-解释-行动）。",
+    challenge: "在高压情境中保持非对抗表达，并复盘 3 次成功案例。",
+    metric: "每周情绪记录 >= 5 次，冲突后恢复时间缩短。",
+    warning: "反复自责、长时间拖延、对小事过度反应。",
+    correction: "先停 10 分钟呼吸与落地动作，再处理事件而非评价自我。",
+    fallback: "当日最低动作：写下 1 条情绪触发 + 1 条可执行动作。",
+  },
+  relationship: {
+    name: "关系与家庭",
+    objective: "把重要关系从被动维护转为主动经营。",
+    baseline: "每周至少 1 次高质量沟通（伴侣/家人/关键朋友）。",
+    progress: "每周进行 1 次深聊，使用‘我感受’句式表达需求。",
+    challenge: "连续 4 周完成关系仪式感行动（共餐/散步/探访）。",
+    metric: "每周高质量沟通次数 >= 1，关键关系满意度主观提升。",
+    warning: "长期回避沟通、误解累积、情绪化回应增多。",
+    correction: "优先澄清事实和需求，约定 30 分钟低防御沟通窗口。",
+    fallback: "当日最低动作：发送 1 条真诚问候并确认对方近况。",
+  },
+  career: {
+    name: "事业与学业",
+    objective: "围绕核心优势形成可见成果，避免忙碌但无积累。",
+    baseline: "每周锁定 3 个高价值任务，先做主轴再做杂项。",
+    progress: "每周产出 1 个可展示成果（文档/方案/演示/案例）。",
+    challenge: "90 天内完成 1 次公开输出，并获得外部反馈。",
+    metric: "周高价值任务完成率 >= 70%，成果产出 >= 1。",
+    warning: "任务堆积、方向摇摆、高投入低回报。",
+    correction: "回到季度主轴，砍掉非主轴事项 20%-30%。",
+    fallback: "当日最低动作：完成主轴任务 20 分钟推进。",
+  },
+  finance: {
+    name: "财务与资源",
+    objective: "让现金流有秩序，降低长期焦虑与决策波动。",
+    baseline: "每周更新一次收支，区分固定支出与弹性支出。",
+    progress: "设置月度自动储蓄比例，建立 3-6 个月应急缓冲目标。",
+    challenge: "90 天内完成 1 套个人资产配置学习与执行清单。",
+    metric: "月储蓄率持续提升，应急金覆盖月数稳步增长。",
+    warning: "冲动消费频繁、账目滞后、回避财务盘点。",
+    correction: "执行 48 小时延迟购买规则，先记账再决策。",
+    fallback: "当日最低动作：记录所有支出并标记必要/非必要。",
+  },
+  growth: {
+    name: "个人成长",
+    objective: "形成输入-思考-输出闭环，而不是只积累信息。",
+    baseline: "每周固定 2 次深度学习时段（每次 45 分钟）。",
+    progress: "每周输出 1 份学习笔记或观点卡片。",
+    challenge: "90 天沉淀 1 套个人方法论草稿并迭代两轮。",
+    metric: "周学习时长 >= 90 分钟，周输出 >= 1。",
+    warning: "收藏很多但不复盘，学习焦虑替代真实进步。",
+    correction: "每次学习结束必须输出 3 条可执行结论。",
+    fallback: "当日最低动作：阅读 10 分钟并写 1 条洞察。",
+  },
+  experience: {
+    name: "生活体验",
+    objective: "通过兴趣与体验恢复能量，避免长期透支。",
+    baseline: "每周安排 1 次无功利兴趣活动（音乐/运动/手作等）。",
+    progress: "每月进行 1 次短途体验或文化输入（展览/自然/城市漫步）。",
+    challenge: "90 天完成 1 个可持续爱好项目并公开记录过程。",
+    metric: "每周兴趣时段 >= 1，主观精力评分提升。",
+    warning: "长期只有工作任务，恢复活动几乎为零。",
+    correction: "先恢复再冲刺，优先安排 2 小时低负担体验时段。",
+    fallback: "当日最低动作：20 分钟纯兴趣时间，不做绩效化评估。",
+  },
+  environment: {
+    name: "环境与秩序",
+    objective: "通过空间与节律管理降低决策成本和分心损耗。",
+    baseline: "每天结束前 10 分钟清理桌面与次日待办。",
+    progress: "每周一次居住/数字空间整理，减少视觉与信息噪音。",
+    challenge: "90 天内完成 1 套个人工作流与生活节律标准化。",
+    metric: "每周整理次数 >= 1，计划执行偏差减少。",
+    warning: "环境杂乱、待办失控、频繁临时救火。",
+    correction: "先清场后开工，重建单日 3 件最重要事项清单。",
+    fallback: "当日最低动作：整理 1 个小区域 + 删 10 条无效信息。",
+  },
+};
+
+const COGNITIVE_TO_LIFE_DIMENSIONS = {
+  ni: { growth: 2, emotional: 2, career: 1 },
+  ne: { experience: 2, growth: 2, career: 1 },
+  si: { environment: 2, health: 1, finance: 1 },
+  se: { health: 2, experience: 2, career: 1 },
+  ti: { growth: 2, finance: 1, career: 1 },
+  te: { career: 2, finance: 2, environment: 1 },
+  fi: { emotional: 2, relationship: 2, growth: 1 },
+  fe: { relationship: 2, emotional: 1, career: 1 },
+};
+
+function selectLifeDimensionPriorities(report) {
+  const scoreBoard = Object.keys(LIFE_DIMENSION_LIBRARY).reduce((acc, key) => {
+    acc[key] = 0;
+    return acc;
+  }, {});
+
+  const ranking = report?.top_rankings || [];
+  ranking.slice(0, 4).forEach((item, idx) => {
+    const dimKey = item?.key;
+    const mappings = COGNITIVE_TO_LIFE_DIMENSIONS[dimKey] || {};
+    const positionBoost = 4 - idx;
+    Object.entries(mappings).forEach(([lifeKey, weight]) => {
+      scoreBoard[lifeKey] += weight * positionBoost;
+    });
+  });
+
+  return Object.entries(scoreBoard)
+    .sort((a, b) => b[1] - a[1])
+    .map(([key]) => key);
+}
+
 function buildDetailedPlan(report, mysticReport) {
   const top1 = report.top_rankings[0]?.label || "核心优势";
   const top2 = report.top_rankings[1]?.label || "次级优势";
+  const orderedLifeKeys = selectLifeDimensionPriorities(report);
+  const majorKeys = orderedLifeKeys.slice(0, 3);
+  const supportKeys = orderedLifeKeys.slice(3, 5);
+  const majorNames = majorKeys.map((k) => LIFE_DIMENSION_LIBRARY[k].name).join("、");
+  const supportNames = supportKeys.map((k) => LIFE_DIMENSION_LIBRARY[k].name).join("、");
+  const lifeDimensions = orderedLifeKeys.map((k) => LIFE_DIMENSION_LIBRARY[k]);
 
   return {
-    annual_direction: `以${top1}为主轴，结合${top2}打造“可复用能力资产 + 可量化成果”双线成长路径。`,
+    annual_direction: `以${top1}为主轴、${top2}为协同，形成“事业推进 + 生活稳态 + 关系与成长并进”的 90 天行动系统。`,
+    focus_summary: `本季度主攻：${majorNames}；托底维度：${supportNames}。其余维度保持最低可执行动作，确保整体平衡。`,
     phase_plan: [
       {
-        phase: "Phase 1（1-4周）定位与聚焦",
+        phase: "Phase 1（1-4周）稳住节律",
         goals: [
-          "明确 1 个年度主战场（职业/学习/副项目）",
-          "产出 1 份个人优势工作说明书（2页）",
-          "建立每周固定复盘窗口（60分钟）",
+          "主攻维度建立保底动作，先求稳定执行",
+          "托底维度完成基础秩序搭建（作息、空间、关系触点）",
+          "建立每周 1 次 30 分钟复盘窗口",
         ],
       },
       {
-        phase: "Phase 2（5-8周）能力外化与验证",
+        phase: "Phase 2（5-8周）提升与外化",
         goals: [
-          "每周完成 1 个可展示成果（文章/方案/演示/案例）",
-          "至少进行 2 次外部反馈访谈，修正表达方式",
-          "把高频任务形成模板，沉淀 SOP",
+          "主攻维度从保底升级到进阶动作",
+          "每周至少完成 1 次外部反馈或可见成果记录",
+          "把有效动作沉淀成个人模板",
         ],
       },
       {
-        phase: "Phase 3（9-12周）影响力放大",
+        phase: "Phase 3（9-12周）整合与放大",
         goals: [
-          "完成 1 次公开输出（分享/演讲/发布）",
-          "建立 1 个长期协作关系（导师/同伴）",
-          "形成下一季度能力跃迁目标与里程碑",
+          "每个主攻维度完成 1 次挑战动作",
+          "总结个人有效策略与失效触发点",
+          "形成下一季度维度优先级与量化里程碑",
         ],
       },
     ],
+    life_dimensions: lifeDimensions,
     weekly_actions: [
-      "每周一：列出 3 个高价值任务（与核心天赋一致）",
-      "每周三：30 分钟中期检查，修正优先级",
-      "每周五：完成 1 次成果发布或对外呈现",
-      "每周末：做一次心流复盘，记录最投入时段与触发条件",
+      `每周一：为主攻维度（${majorNames}）各设 1 个关键动作`,
+      "每周三：15-30 分钟中检，识别偏离并及时减负",
+      "每周五：记录本周证据（成果、关系反馈、能量状态）",
+      "每周末：复盘 5 问，决定下周维度优先级",
     ],
     risk_controls: [
-      "若出现拖延：先完成 20 分钟最小行动，再评估状态",
-      "若出现内耗：使用“事实-解释-行动”三栏复盘，避免情绪扩大",
-      "若出现方向摇摆：回到年度主轴，剔除与主轴无关的投入",
+      "若出现过载：立刻削减非主轴任务，保留主攻维度保底动作",
+      "若出现内耗：使用“事实-解释-行动”三栏复盘，避免自责循环",
+      "若出现中断：启动 48 小时回归机制，先做迷你动作再恢复节奏",
+    ],
+    daily_actions: [
+      "每天只保留 3 个重点动作：1 个主攻、1 个托底、1 个恢复。",
+      "任一动作无法完成时，执行对应维度的最低动作，不做全盘放弃。",
+      "晚间 5 分钟记录：今天最有能量时段 + 明日首要动作。",
+    ],
+    weekly_review_questions: [
+      "本周哪个维度提升最明显？证据是什么？",
+      "哪个触发点最容易让我偏离节奏？",
+      "我在哪个场景最有心流，如何下周复用？",
+      "是否有 1-2 个任务可以直接删除或延期？",
+      "下周主攻 3 维和托底 2 维分别是什么？",
     ],
     mystic_alignment: mysticReport
       ? `方位建议：${mysticReport.best_directions}；行业建议：${mysticReport.best_industries.join(" / ")}；飞星提示：${mysticReport.flying_advice}；官禄宫提示：${mysticReport.ziwei_12_palaces?.官禄宫 || "以阶段成果稳步推进。"}`
@@ -517,7 +660,7 @@ export function renderLogin(container) {
   container.innerHTML = `
     <section class="hero">
       <p class="meta-line">Inner Journey</p>
-      <h2>方知我是我</h2>
+      <h2>看见自己</h2>
       <p>在安静处看见自己，在混沌里辨认方向。</p>
       <div class="hero-stats">
         <span>看见</span>
@@ -541,7 +684,6 @@ export function renderLogin(container) {
         <div class="row">
           <button class="primary" type="submit">登录</button>
           <button class="secondary" type="button" id="guest-login">游客体验</button>
-          <small class="hint">JWT access / refresh 已启用</small>
         </div>
       </form>
       <p id="login-error" class="tip warn" style="display:none;"></p>
@@ -565,7 +707,6 @@ export function renderLogin(container) {
         </div>
         <div class="row">
           <button class="primary" type="submit">注册并进入</button>
-          <small class="hint">部署后其他人可直接注册使用</small>
         </div>
       </form>
       <p id="register-error" class="tip warn" style="display:none;"></p>
@@ -636,7 +777,7 @@ export async function renderDashboard(container) {
         <div class="kpi"><span>已完成的回望片段</span><strong>${reviews.length}</strong></div>
       </div>
       <div class="row" style="margin-top:16px;">
-        <button class="primary" id="to-assessment">进入看见（5-7分钟）</button>
+        <button class="primary" id="to-assessment">看见（5-7分钟）</button>
         <button class="secondary" id="logout">退出登录</button>
       </div>
     </section>
@@ -922,7 +1063,7 @@ export async function renderProfile(container) {
       </div>
       <div class="row" style="margin-top:12px;">
         <button class="primary" id="regenerate-now">重新整合</button>
-        <button class="secondary" id="to-plan">进入成为</button>
+        <button class="secondary" id="to-plan">成为</button>
       </div>
       <p id="profile-msg"></p>
     </section>
@@ -986,6 +1127,25 @@ export async function renderPlan(container) {
       <h2>详细计划方案</h2>
       ${planPack ? `
         <p><strong>年度主轴：</strong>${esc(planPack.annual_direction)}</p>
+        <p><strong>维度策略：</strong>${esc(planPack.focus_summary)}</p>
+
+        <h3 style="margin-top:16px;">全生活维度（90天）</h3>
+        ${planPack.life_dimensions.map((dimension) => `
+          <article class="step" style="margin-top:10px;">
+            <h3>${esc(dimension.name)}</h3>
+            <p><strong>90天目标：</strong>${esc(dimension.objective)}</p>
+            <ul>
+              <li><strong>保底层：</strong>${esc(dimension.baseline)}</li>
+              <li><strong>进阶层：</strong>${esc(dimension.progress)}</li>
+              <li><strong>挑战层：</strong>${esc(dimension.challenge)}</li>
+            </ul>
+            <p><strong>指标：</strong>${esc(dimension.metric)}</p>
+            <p><strong>预警：</strong>${esc(dimension.warning)}</p>
+            <p><strong>纠偏：</strong>${esc(dimension.correction)}</p>
+            <p><strong>最低动作：</strong>${esc(dimension.fallback)}</p>
+          </article>
+        `).join("")}
+
         ${planPack.phase_plan.map((p) => `
           <article class="step" style="margin-top:10px;">
             <h3>${esc(p.phase)}</h3>
@@ -998,6 +1158,12 @@ export async function renderPlan(container) {
 
         <h3 style="margin-top:16px;">风险预案</h3>
         <ul>${planPack.risk_controls.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+
+        <h3 style="margin-top:16px;">每日执行规则</h3>
+        <ul>${planPack.daily_actions.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+
+        <h3 style="margin-top:16px;">周复盘 5 问</h3>
+        <ul>${planPack.weekly_review_questions.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
 
         <h3 style="margin-top:16px;">命理协同建议</h3>
         <p>${esc(planPack.mystic_alignment)}</p>
