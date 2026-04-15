@@ -6,5 +6,5 @@
 
 	window.__GIFT_API_BASE__ = isLocal
 		? "http://127.0.0.1:8000/api"
-		: "https://fangzhi-backend.onrender.com/api";
+		: "https://shouge66.pythonanywhere.com/api";
 })();
