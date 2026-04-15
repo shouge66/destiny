@@ -249,33 +249,10 @@ function flyingStarNumber(year, month, day) {
   return n === 0 ? 9 : n;
 }
 
-function ziweiTrine(branch) {
-  const groups = {
-    "申子辰": ["申", "子", "辰"],
-    "亥卯未": ["亥", "卯", "未"],
-    "寅午戌": ["寅", "午", "戌"],
-    "巳酉丑": ["巳", "酉", "丑"],
-  };
-
-  for (const [name, arr] of Object.entries(groups)) {
-    if (arr.includes(branch)) {
-      return name;
-    }
-  }
-  return "申子辰";
-}
-
-function buildZiweiPalaces(trine, topStrength) {
-  const theme = trine === "亥卯未"
-    ? "关系创造"
-    : trine === "寅午戌"
-      ? "行动事业"
-      : trine === "巳酉丑"
-        ? "资源秩序"
-        : "洞察战略";
+function buildZiweiPalaces(topStrength) {
 
   return {
-    命宫: `主轴在${theme}，建议以${topStrength}作为长期身份锚点。`,
+    命宫: `你的核心驱动力偏向${topStrength}，建议将其作为长期身份锚点。`,
     兄弟宫: "宜建立少量稳定同盟，重质量而非数量。",
     夫妻宫: "关系看重价值同频与成长节律一致。",
     子女宫: "创作表达有潜力，适合长期项目孵化。",
@@ -308,7 +285,6 @@ function normalizeMysticReport(remote, formData, talentReport) {
     yongshen: remote.yongshen || chart.yongshen || fallback.yongshen,
     flying_star: remote.flying_star || chart.flying_star || fallback.flying_star,
     flying_advice: remote.flying_advice || chart.flying_advice || fallback.flying_advice,
-    ziwei_trine: remote.ziwei_trine || ziwei.trine || fallback.ziwei_trine,
     ziwei_focus: remote.ziwei_focus || ziwei.focus || fallback.ziwei_focus,
     ziwei_12_palaces: palaces,
     best_cities: Array.isArray(remote.best_cities) ? remote.best_cities : fallback.best_cities,
@@ -330,7 +306,6 @@ function buildMysticReport(formData, talentReport) {
   const y = heavenlyStemAndBranch(year);
   const monthEle = monthElement(month);
   const flyingStar = flyingStarNumber(year, month, day);
-  const trine = ziweiTrine(y.branch);
 
   const elementMap = {
     甲: "木", 乙: "木", 丙: "火", 丁: "火", 戊: "土", 己: "土", 庚: "金", 辛: "金", 壬: "水", 癸: "水",
@@ -374,13 +349,7 @@ function buildMysticReport(formData, talentReport) {
   };
 
   const topStrength = talentReport.top_rankings[0]?.label || "综合能力";
-  const ziwFocus = trine === "亥卯未"
-    ? "偏关系与创造轴，宜通过合作放大影响。"
-    : trine === "寅午戌"
-      ? "偏行动与事业轴，宜用项目战役完成跃迁。"
-      : trine === "巳酉丑"
-        ? "偏资源与结构轴，宜做标准化体系建设。"
-        : "偏洞察与战略轴，宜做深度研究和布局。";
+  const ziwFocus = `紫微结构显示你适合以${topStrength}为主轴，优先打通“命宫-官禄宫-福德宫”三点联动：先稳内在节律，再做外部成果放大。`;
 
   const hourAdvice = hour >= 23 || hour < 5
     ? "夜时生人，适合深度创作与安静决策窗口。"
@@ -393,9 +362,8 @@ function buildMysticReport(formData, talentReport) {
     yongshen,
     flying_star: `${flyingStar}白星`,
     flying_advice: flyingAdvice[flyingStar],
-    ziwei_trine: trine,
     ziwei_focus: ziwFocus,
-    ziwei_12_palaces: buildZiweiPalaces(trine, topStrength),
+    ziwei_12_palaces: buildZiweiPalaces(topStrength),
     best_directions: directionMap[natalElement],
     best_cities: cityMap[natalElement],
     best_industries: industryMap[natalElement],
@@ -462,6 +430,86 @@ function rankingHtml(ranking) {
       </div>
     `)
     .join("");
+}
+
+const RADAR_DIMENSION_ORDER = ["ni", "ne", "si", "se", "ti", "te", "fi", "fe"];
+
+function buildRadarSvg(ranking) {
+  const size = 360;
+  const center = size / 2;
+  const maxR = 124;
+  const levels = [20, 40, 60, 80, 100];
+  const scoreMap = Object.fromEntries(ranking.map(([key, score]) => [key, Number(score) || 0]));
+
+  const pointFor = (ratio, idx) => {
+    const angle = ((Math.PI * 2) / RADAR_DIMENSION_ORDER.length) * idx - Math.PI / 2;
+    const r = maxR * ratio;
+    return {
+      x: center + Math.cos(angle) * r,
+      y: center + Math.sin(angle) * r,
+    };
+  };
+
+  const rings = levels
+    .map((lv) => {
+      const points = RADAR_DIMENSION_ORDER.map((_, idx) => {
+        const p = pointFor(lv / 100, idx);
+        return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+      }).join(" ");
+      return `<polygon points="${points}" class="radar-ring" />`;
+    })
+    .join("");
+
+  const axes = RADAR_DIMENSION_ORDER.map((_, idx) => {
+    const p = pointFor(1, idx);
+    return `<line x1="${center}" y1="${center}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" class="radar-axis" />`;
+  }).join("");
+
+  const dataPoints = RADAR_DIMENSION_ORDER.map((key, idx) => {
+    const p = pointFor((scoreMap[key] || 0) / 100, idx);
+    return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+  }).join(" ");
+
+  const pointDots = RADAR_DIMENSION_ORDER.map((key, idx) => {
+    const p = pointFor((scoreMap[key] || 0) / 100, idx);
+    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.4" class="radar-dot" />`;
+  }).join("");
+
+  const labels = RADAR_DIMENSION_ORDER.map((key, idx) => {
+    const p = pointFor(1.12, idx);
+    const label = DIMENSION_META[key]?.label || key;
+    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" class="radar-label" text-anchor="middle">${esc(label)}</text>`;
+  }).join("");
+
+  return `
+    <svg viewBox="0 0 ${size} ${size}" class="radar-svg" role="img" aria-label="16题多维倾向性评分雷达图">
+      ${rings}
+      ${axes}
+      <polygon points="${dataPoints}" class="radar-shape" />
+      ${pointDots}
+      ${labels}
+    </svg>
+  `;
+}
+
+function radarNoteHtml(ranking) {
+  const top3 = ranking
+    .slice(0, 3)
+    .map(([key, score]) => `${DIMENSION_META[key]?.label || key}（${Number(score).toFixed(1)}）`)
+    .join("、");
+  const tail2 = ranking
+    .slice(-2)
+    .map(([key, score]) => `${DIMENSION_META[key]?.label || key}（${Number(score).toFixed(1)}）`)
+    .join("、");
+
+  return `
+    <div class="radar-note">
+      <p><strong>说明：</strong>该雷达图基于 16 道题计算，8 个维度各对应 2 道题，单维得分 = 两题平均分 × 20（范围 0-100）。</p>
+      <p><strong>当前高倾向维度：</strong>${esc(top3)}</p>
+      <p><strong>当前补位维度：</strong>${esc(tail2)}</p>
+      <p class="tip">雷达图反映“倾向强度”，不是能力上限。高分代表更自然的认知偏好，低分代表当前较少启用，可通过训练补位。</p>
+    </div>
+  `;
 }
 
 const LIFE_DIMENSION_LIBRARY = {
@@ -1023,6 +1071,10 @@ export async function renderProfile(container) {
       <h3>能力光谱</h3>
       <div class="score-bars" id="ranking-bars">${rankingHtml(ranking)}</div>
 
+      <h3 style="margin-top:16px;">16题多维倾向性评分雷达图</h3>
+      <div class="radar-wrap" id="radar-chart">${buildRadarSvg(ranking)}</div>
+      <div id="radar-notes">${radarNoteHtml(ranking)}</div>
+
       <h3 style="margin-top:16px;">被隐藏的天赋</h3>
       <div>${(report.hidden_talents || []).map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>
 
@@ -1041,7 +1093,7 @@ export async function renderProfile(container) {
         <p><strong>八字基准：</strong>${esc(mysticReport.bazi)}</p>
         <p><strong>喜用神提示：</strong>${esc(mysticReport.yongshen)}</p>
         <p><strong>飞星：</strong>${esc(mysticReport.flying_star)}，${esc(mysticReport.flying_advice)}</p>
-        <p><strong>三合紫微：</strong>${esc(mysticReport.ziwei_trine)}，${esc(mysticReport.ziwei_focus)}</p>
+        <p><strong>紫微提示：</strong>${esc(mysticReport.ziwei_focus)}</p>
         <h4 style="margin-top:12px;">紫微十二宫</h4>
         <div>
           ${Object.entries(mysticReport.ziwei_12_palaces || {}).map(([palace, note]) => `<p><strong>${esc(palace)}：</strong>${esc(note)}</p>`).join("")}
@@ -1085,6 +1137,8 @@ export async function renderProfile(container) {
 
     const revisedRanking = getSortedRanking(revisedScores);
     container.querySelector("#ranking-bars").innerHTML = rankingHtml(revisedRanking);
+    container.querySelector("#radar-chart").innerHTML = buildRadarSvg(revisedRanking);
+    container.querySelector("#radar-notes").innerHTML = radarNoteHtml(revisedRanking);
 
     const regenerated = {
       ...profile,

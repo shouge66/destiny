@@ -1,15 +1,42 @@
 import { API_BASE } from "./config.js";
 import { clearAuth, setAuth, state } from "./state.js";
 
+async function getErrorMessage(res, fallback) {
+  try {
+    const data = await res.json();
+    if (typeof data?.detail === "string" && data.detail) {
+      return data.detail;
+    }
+    if (typeof data?.non_field_errors?.[0] === "string") {
+      return data.non_field_errors[0];
+    }
+    const firstValue = Object.values(data || {}).find((value) => {
+      if (typeof value === "string") return value;
+      if (Array.isArray(value) && typeof value[0] === "string") return true;
+      return false;
+    });
+    if (typeof firstValue === "string") {
+      return firstValue;
+    }
+    if (Array.isArray(firstValue) && typeof firstValue[0] === "string") {
+      return firstValue[0];
+    }
+  } catch {
+    // Ignore parse errors and return fallback.
+  }
+  return fallback;
+}
+
 export async function login(username, password) {
   const res = await fetch(`${API_BASE}/auth/token/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username: String(username || "").trim(), password }),
   });
 
   if (!res.ok) {
-    throw new Error("登录失败，请检查用户名和密码");
+    const message = await getErrorMessage(res, "登录失败，请检查用户名和密码");
+    throw new Error(message);
   }
 
   const auth = await res.json();
@@ -25,8 +52,8 @@ export async function register(username, password, email = "") {
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "注册失败，请检查输入内容");
+    const message = await getErrorMessage(res, "注册失败，请检查输入内容");
+    throw new Error(message);
   }
 
   const auth = await res.json();
@@ -41,8 +68,8 @@ export async function guestLogin() {
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "游客体验暂不可用");
+    const message = await getErrorMessage(res, "游客体验暂不可用");
+    throw new Error(message);
   }
 
   const auth = await res.json();
@@ -79,8 +106,8 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `请求失败: ${response.status}`);
+    const message = await getErrorMessage(response, `请求失败: ${response.status}`);
+    throw new Error(message);
   }
 
   if (response.status === 204) {
