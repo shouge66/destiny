@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>方知我是我 | 个人天赋挖掘与成长指导</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <canvas id="data-cosmos" aria-hidden="true"></canvas>
+    <div class="bg-noise" aria-hidden="true"></div>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">L</span>
+        <div>
+          <h1>DESTINY</h1>
+          <p>如今方知我是我</p>
+        </div>
+      </div>
+      <nav class="nav" id="main-nav"></nav>
+    </header>
+
+    <main id="app" class="app-shell">
+      <section class="hero">
+        <p class="meta-line">Inner Journey</p>
+        <h2>方知我是我</h2>
+        <p>在安静处看见自己，在混沌里辨认方向。</p>
+        <div class="hero-stats">
+          <span>看见</span>
+          <span>整合</span>
+          <span>成为</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <p class="meta-line">Quiet Entry</p>
+        <h2>登录后，开始你的内在旅程</h2>
+        <form class="grid" style="max-width:480px;">
+          <div>
+            <label>用户名</label>
+            <input name="username" />
+          </div>
+          <div>
+            <label>密码</label>
+            <input name="password" type="password" />
+          </div>
+          <div class="row">
+            <button class="primary" type="button">登录</button>
+            <small class="hint">如果页面未自动加载完整内容，请刷新一次。</small>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <template id="loading-template">
+      <section class="panel center">
+        <p>正在整理你的成长画布...</p>
+      </section>
+    </template>
+
+    <script src="./config.runtime.js"></script>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>

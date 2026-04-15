@@ -1,0 +1,364 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Rock Paper Scissors</title>
+	<style>
+		:root {
+			--bg-1: #f2f7ff;
+			--bg-2: #e5ecff;
+			--panel: #ffffff;
+			--text: #1d2433;
+			--muted: #5a647a;
+			--accent: #bb2fba;
+			--accent-2: #a928a7;
+			--danger: #b02aaf;
+			--ring: rgba(187, 47, 186, 0.28);
+			--shadow: 0 20px 40px rgba(20, 40, 90, 0.12);
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			display: grid;
+			place-items: center;
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			color: var(--text);
+			background:
+				radial-gradient(circle at 15% 20%, rgba(0, 87, 255, 0.12), transparent 40%),
+				radial-gradient(circle at 85% 80%, rgba(0, 184, 148, 0.14), transparent 45%),
+				linear-gradient(160deg, var(--bg-1), var(--bg-2));
+			padding: 20px;
+		}
+
+		.game {
+			width: min(760px, 100%);
+			background: var(--panel);
+			border-radius: 22px;
+			box-shadow: var(--shadow);
+			padding: 28px;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.game::after {
+			content: "";
+			position: absolute;
+			right: -80px;
+			top: -80px;
+			width: 220px;
+			height: 220px;
+			border-radius: 50%;
+			background: radial-gradient(circle, rgba(0, 87, 255, 0.16), transparent 65%);
+			pointer-events: none;
+		}
+
+		h1 {
+			margin: 0 0 8px;
+			font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+			letter-spacing: 0.2px;
+		}
+
+		.subtitle {
+			margin: 0 0 22px;
+			color: var(--muted);
+			font-size: 0.98rem;
+		}
+
+		.choices {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 12px;
+			margin-bottom: 20px;
+		}
+
+		.choice-btn {
+			border: 0;
+			border-radius: 14px;
+			padding: 14px 10px;
+			background: var(--accent);
+			color: #ffffff;
+			font-size: 1rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+		}
+
+		.choice-btn:hover {
+			transform: translateY(-2px);
+			background: var(--accent-2);
+			box-shadow: 0 8px 16px rgba(126, 26, 124, 0.24);
+		}
+
+		.choice-btn:focus-visible {
+			outline: 0;
+			box-shadow: 0 0 0 4px var(--ring);
+		}
+
+		.arena {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 12px;
+			margin-bottom: 18px;
+		}
+
+		.card {
+			background: #f9fbff;
+			border: 1px solid #e8eefb;
+			border-radius: 14px;
+			padding: 14px;
+		}
+
+		.label {
+			font-size: 0.82rem;
+			font-weight: 700;
+			letter-spacing: 0.6px;
+			color: var(--muted);
+			text-transform: uppercase;
+			margin-bottom: 6px;
+		}
+
+		.pick {
+			font-size: 1.2rem;
+			font-weight: 700;
+			min-height: 1.4em;
+		}
+
+		.result {
+			border-radius: 12px;
+			padding: 12px 14px;
+			margin-bottom: 18px;
+			font-weight: 700;
+			background: #f7e6f7;
+			color: #7f257e;
+		}
+
+		.result.win {
+			background: #f4dcf3;
+			color: #752274;
+		}
+
+		.result.lose {
+			background: #fbe3f1;
+			color: #8c1f63;
+		}
+
+		.scoreboard {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 10px;
+			margin-bottom: 18px;
+		}
+
+		.score-item {
+			background: #f7faff;
+			border: 1px solid #e5edff;
+			border-radius: 12px;
+			text-align: center;
+			padding: 10px 8px;
+		}
+
+		.score-item strong {
+			display: block;
+			font-size: 1.2rem;
+			margin-bottom: 3px;
+		}
+
+		.score-item span {
+			font-size: 0.82rem;
+			color: var(--muted);
+		}
+
+		.actions {
+			display: flex;
+			justify-content: flex-end;
+		}
+
+		.reset-btn {
+			border: 0;
+			border-radius: 10px;
+			padding: 10px 14px;
+			background: var(--accent);
+			color: #fff;
+			font-weight: 700;
+			cursor: pointer;
+			transition: opacity 0.2s ease;
+		}
+
+		.reset-btn:hover {
+			opacity: 0.9;
+		}
+
+		@media (max-width: 640px) {
+			.game {
+				padding: 20px;
+			}
+
+			.choices {
+				grid-template-columns: 1fr;
+			}
+
+			.arena {
+				grid-template-columns: 1fr;
+			}
+
+			.scoreboard {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+		}
+	</style>
+</head>
+<body>
+	<main class="game" role="main">
+		<h1>Rock Paper Scissors</h1>
+		<p class="subtitle">Pick one move. Computer picks randomly. First to have more wins is the champion.</p>
+
+		<section class="choices" aria-label="Choose your move">
+			<button class="choice-btn" data-choice="rock" type="button">Rock</button>
+			<button class="choice-btn" data-choice="paper" type="button">Paper</button>
+			<button class="choice-btn" data-choice="scissors" type="button">Scissors</button>
+		</section>
+
+		<section class="arena" aria-live="polite">
+			<article class="card">
+				<div class="label">Your Pick</div>
+				<div class="pick" id="playerPick">-</div>
+			</article>
+			<article class="card">
+				<div class="label">Computer Pick</div>
+				<div class="pick" id="computerPick">-</div>
+			</article>
+		</section>
+
+		<div class="result" id="resultText">Make your move to start the game.</div>
+
+		<section class="scoreboard" aria-label="Score board">
+			<div class="score-item">
+				<strong id="wins">0</strong>
+				<span>Wins</span>
+			</div>
+			<div class="score-item">
+				<strong id="losses">0</strong>
+				<span>Losses</span>
+			</div>
+			<div class="score-item">
+				<strong id="draws">0</strong>
+				<span>Draws</span>
+			</div>
+			<div class="score-item">
+				<strong id="streak">0</strong>
+				<span>Win Streak</span>
+			</div>
+		</section>
+
+		<div class="actions">
+			<button class="reset-btn" id="resetBtn" type="button">Reset</button>
+		</div>
+	</main>
+
+	<script>
+		const choices = ["rock", "paper", "scissors"];
+		const beats = {
+			rock: "scissors",
+			paper: "rock",
+			scissors: "paper"
+		};
+
+		const labels = {
+			rock: "Rock",
+			paper: "Paper",
+			scissors: "Scissors"
+		};
+
+		const state = {
+			wins: 0,
+			losses: 0,
+			draws: 0,
+			streak: 0
+		};
+
+		const elements = {
+			playerPick: document.getElementById("playerPick"),
+			computerPick: document.getElementById("computerPick"),
+			resultText: document.getElementById("resultText"),
+			wins: document.getElementById("wins"),
+			losses: document.getElementById("losses"),
+			draws: document.getElementById("draws"),
+			streak: document.getElementById("streak"),
+			resetBtn: document.getElementById("resetBtn")
+		};
+
+		function getComputerChoice() {
+			const index = Math.floor(Math.random() * choices.length);
+			return choices[index];
+		}
+
+		function updateScoreboard() {
+			elements.wins.textContent = String(state.wins);
+			elements.losses.textContent = String(state.losses);
+			elements.draws.textContent = String(state.draws);
+			elements.streak.textContent = String(state.streak);
+		}
+
+		function updateResult(type, text) {
+			elements.resultText.textContent = text;
+			elements.resultText.classList.remove("win", "lose");
+
+			if (type === "win") {
+				elements.resultText.classList.add("win");
+			} else if (type === "lose") {
+				elements.resultText.classList.add("lose");
+			}
+		}
+
+		function playRound(playerChoice) {
+			const computerChoice = getComputerChoice();
+
+			elements.playerPick.textContent = labels[playerChoice];
+			elements.computerPick.textContent = labels[computerChoice];
+
+			if (playerChoice === computerChoice) {
+				state.draws += 1;
+				state.streak = 0;
+				updateResult("draw", "Draw! Try again.");
+			} else if (beats[playerChoice] === computerChoice) {
+				state.wins += 1;
+				state.streak += 1;
+				updateResult("win", "You win this round!");
+			} else {
+				state.losses += 1;
+				state.streak = 0;
+				updateResult("lose", "Computer wins this round.");
+			}
+
+			updateScoreboard();
+		}
+
+		function resetGame() {
+			state.wins = 0;
+			state.losses = 0;
+			state.draws = 0;
+			state.streak = 0;
+
+			elements.playerPick.textContent = "-";
+			elements.computerPick.textContent = "-";
+			updateResult("draw", "Game reset. Make your move.");
+			updateScoreboard();
+		}
+
+		document.querySelectorAll(".choice-btn").forEach((button) => {
+			button.addEventListener("click", () => {
+				playRound(button.dataset.choice);
+			});
+		});
+
+		elements.resetBtn.addEventListener("click", resetGame);
+	</script>
+</body>
+</html>

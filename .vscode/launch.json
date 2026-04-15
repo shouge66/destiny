@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Django: gift_tracker",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "program": "${workspaceFolder}/gift_tracker/manage.py",
+      "args": [
+        "runserver",
+        "127.0.0.1:8000"
+      ],
+      "django": true,
+      "justMyCode": true,
+      "cwd": "${workspaceFolder}/gift_tracker"
+    }
+  ]
+}
