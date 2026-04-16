@@ -512,6 +512,50 @@ function radarNoteHtml(ranking) {
   `;
 }
 
+function buildIntegratedReading(report, mysticReport, ranking) {
+  const top3 = ranking.slice(0, 3).map(([key]) => DIMENSION_META[key]?.label || key);
+  const weakest = ranking.slice(-2).map(([key]) => DIMENSION_META[key]?.label || key);
+  const headline = mysticReport
+    ? `你不是普通意义上的“平均型成长者”，而是带着${top3[0] || "核心优势"}主轴出生，并被${top3[1] || "协同优势"}与${top3[2] || "延展优势"}共同放大的人。`
+    : `你的生命主轴已经非常清晰：${top3.join("、")}并不是零散优势，而是一条正在成形的命运推进线。`;
+
+  const opening = mysticReport
+    ? `问卷显示你的认知优势集中在${top3.join("、")}；命理结构则进一步说明，这种优势不是阶段性表现，而是更适合被长期经营的人生配置。你的路，不适合平均用力，更适合集中爆发。`
+    : `从问卷结构看，你更适合把有限精力押注在高匹配场景中。只要主轴正确，你的成长速度会明显快于平均分布式投入。`;
+
+  const mysticLines = mysticReport
+    ? [
+        `八字基准与喜用提示显示，你当前更适合顺势经营“${mysticReport.best_industries?.join(" / ") || "优势行业"}”这类能长期积累的方向，而不是反复横跳。`,
+        `紫微提示你的外部成就，必须建立在内部节律稳定之上。${mysticReport.ziwei_focus}`,
+        `从宫位联动看，事业、精神状态与关系质量彼此牵动：${mysticReport.ziwei_12_palaces?.官禄宫 || "事业位要求阶段成果"}${mysticReport.ziwei_12_palaces?.福德宫 || "精神位要求内在一致"}`,
+      ]
+    : [];
+
+  const reportParagraphs = String(report.long_form || "")
+    .split("\n\n")
+    .filter(Boolean)
+    .slice(0, 3);
+
+  const narrative = [opening, ...reportParagraphs, ...mysticLines]
+    .filter(Boolean)
+    .map((text) => `<p>${esc(text)}</p>`)
+    .join("");
+
+  const highlights = [
+    `你最该放大的不是短期效率，而是${top3[0] || "核心优势"}带来的长期复利。`,
+    `你的人生突破口通常出现在“优势主轴 + 外部验证”同时发生的阶段。`,
+    `当前真正决定上限的，不是天赋够不够，而是${weakest.join("、")}是否被稳定补位。`,
+    mysticReport ? `方位与环境上，优先靠近${mysticReport.best_directions || "更稳的空间方向"}，有助于你把分散感收拢成行动力。` : "当你停止平均分配精力，改为围绕主轴做决策时，人生会明显开始提速。",
+  ];
+
+  return {
+    headline,
+    opening,
+    narrative,
+    highlights,
+  };
+}
+
 const LIFE_DIMENSION_LIBRARY = {
   health: {
     name: "身心健康",
@@ -1059,21 +1103,26 @@ export async function renderProfile(container) {
     growth_principle: "",
   };
   const mysticReport = state.flowContext.mysticReport;
+  const integrated = buildIntegratedReading(report, mysticReport, ranking);
 
   container.innerHTML = `
     <section class="panel">
-      <h2>整合报告</h2>
-      <p>${esc(report.summary)}</p>
+      <p class="meta-line">Destiny Reading</p>
+      <h2 class="destiny-headline">${esc(integrated.headline)}</h2>
+      <p class="destiny-opening">${esc(integrated.opening)}</p>
 
-      <h3 style="margin-top:16px;">详细叙事报告</h3>
-      <div class="long-report">${esc(report.long_form || "").replaceAll("\n", "<br />")}</div>
+      <h3 style="margin-top:16px;">融合解读</h3>
+      <div class="long-report">${integrated.narrative}</div>
 
-      <h3>能力光谱</h3>
-      <div class="score-bars" id="ranking-bars">${rankingHtml(ranking)}</div>
+      <div class="score-bars" id="ranking-bars" style="display:none;">${rankingHtml(ranking)}</div>
 
       <h3 style="margin-top:16px;">16题多维倾向性评分雷达图</h3>
       <div class="radar-wrap" id="radar-chart">${buildRadarSvg(ranking)}</div>
-      <div id="radar-notes">${radarNoteHtml(ranking)}</div>
+
+      <h3 style="margin-top:16px;">关键命运线索</h3>
+      <ul>
+        ${integrated.highlights.map((x) => `<li>${esc(x)}</li>`).join("")}
+      </ul>
 
       <h3 style="margin-top:16px;">被隐藏的天赋</h3>
       <div>${(report.hidden_talents || []).map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>
@@ -1088,21 +1137,10 @@ export async function renderProfile(container) {
 
       ${mysticReport ? `
       <div class="mystic-block" style="margin-top:16px;">
-        <h3>命理严选分析（八字 + 紫微星盘十二宫）</h3>
-        <p><strong>数据来源：</strong>${esc(mysticReport.source === "local-fallback" ? "本地保底排盘" : "专业排盘")}</p>
-        <p><strong>八字基准：</strong>${esc(mysticReport.bazi)}</p>
-        <p><strong>喜用神提示：</strong>${esc(mysticReport.yongshen)}</p>
-        <p><strong>飞星：</strong>${esc(mysticReport.flying_star)}，${esc(mysticReport.flying_advice)}</p>
-        <p><strong>紫微提示：</strong>${esc(mysticReport.ziwei_focus)}</p>
-        <h4 style="margin-top:12px;">紫微十二宫</h4>
-        <div>
-          ${Object.entries(mysticReport.ziwei_12_palaces || {}).map(([palace, note]) => `<p><strong>${esc(palace)}：</strong>${esc(note)}</p>`).join("")}
-        </div>
-        <p><strong>最合适方位：</strong>${esc(mysticReport.best_directions)}</p>
-        <p><strong>建议城市：</strong>${mysticReport.best_cities.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</p>
-        <p><strong>建议行业：</strong>${mysticReport.best_industries.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</p>
-        <p><strong>解决方案：</strong>${esc(mysticReport.personalized_solution)}</p>
-        <p class="tip warn">${esc(mysticReport.note)}</p>
+        <p><strong>命理坐标：</strong>${esc(mysticReport.bazi)}；${esc(mysticReport.yongshen)}；${esc(mysticReport.flying_star)} ${esc(mysticReport.flying_advice)}</p>
+        <p><strong>适配方向：</strong>${esc(mysticReport.best_directions)}</p>
+        <p><strong>适配城市：</strong>${mysticReport.best_cities.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</p>
+        <p><strong>适配行业：</strong>${mysticReport.best_industries.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</p>
       </div>
       ` : ""}
     </section>
@@ -1136,9 +1174,11 @@ export async function renderProfile(container) {
     });
 
     const revisedRanking = getSortedRanking(revisedScores);
-    container.querySelector("#ranking-bars").innerHTML = rankingHtml(revisedRanking);
+    const rankingBars = container.querySelector("#ranking-bars");
+    if (rankingBars) {
+      rankingBars.innerHTML = rankingHtml(revisedRanking);
+    }
     container.querySelector("#radar-chart").innerHTML = buildRadarSvg(revisedRanking);
-    container.querySelector("#radar-notes").innerHTML = radarNoteHtml(revisedRanking);
 
     const regenerated = {
       ...profile,
