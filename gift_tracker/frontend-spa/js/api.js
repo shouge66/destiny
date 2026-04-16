@@ -27,12 +27,20 @@ async function getErrorMessage(res, fallback) {
   return fallback;
 }
 
+async function safeFetch(url, options, fallback) {
+  try {
+    return await fetch(url, options);
+  } catch {
+    throw new Error(fallback);
+  }
+}
+
 export async function login(username, password) {
-  const res = await fetch(`${API_BASE}/auth/token/`, {
+  const res = await safeFetch(`${API_BASE}/auth/token/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username: String(username || "").trim(), password }),
-  });
+  }, "网络请求失败，请检查当前页面是否为正式地址，或稍后重试。");
 
   if (!res.ok) {
     const message = await getErrorMessage(res, "登录失败，请检查用户名和密码");
@@ -45,11 +53,11 @@ export async function login(username, password) {
 }
 
 export async function register(username, password, email = "") {
-  const res = await fetch(`${API_BASE}/auth/register/`, {
+  const res = await safeFetch(`${API_BASE}/auth/register/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password, email }),
-  });
+  }, "注册请求未发送成功，请刷新页面后重试。");
 
   if (!res.ok) {
     const message = await getErrorMessage(res, "注册失败，请检查输入内容");
@@ -62,10 +70,10 @@ export async function register(username, password, email = "") {
 }
 
 export async function guestLogin() {
-  const res = await fetch(`${API_BASE}/auth/guest/`, {
+  const res = await safeFetch(`${API_BASE}/auth/guest/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-  });
+  }, "游客体验请求失败，请稍后重试。");
 
   if (!res.ok) {
     const message = await getErrorMessage(res, "游客体验暂不可用");
@@ -87,13 +95,21 @@ export async function apiFetch(path, options = {}) {
     headers.Authorization = `Bearer ${state.auth.access}`;
   }
 
-  let response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  let response = await safeFetch(
+    `${API_BASE}${path}`,
+    { ...options, headers },
+    "网络连接失败，请确认后端服务可访问后重试。",
+  );
 
   if (response.status === 401 && state.auth?.refresh) {
     const refreshed = await refreshToken(state.auth.refresh);
     if (refreshed) {
       headers.Authorization = `Bearer ${state.auth.access}`;
-      response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+      response = await safeFetch(
+        `${API_BASE}${path}`,
+        { ...options, headers },
+        "网络连接失败，请确认后端服务可访问后重试。",
+      );
     }
   }
 
@@ -118,11 +134,11 @@ export async function apiFetch(path, options = {}) {
 }
 
 async function refreshToken(refresh) {
-  const res = await fetch(`${API_BASE}/auth/token/refresh/`, {
+  const res = await safeFetch(`${API_BASE}/auth/token/refresh/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh }),
-  });
+  }, "令牌刷新失败，请重新登录。");
 
   if (!res.ok) {
     clearAuth();
